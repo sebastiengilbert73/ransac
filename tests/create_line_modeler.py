@@ -38,9 +38,14 @@ def main():
     consensus_model, inliers_list, outliers_list = line_modeler.ConsensusModel(xy_tuples)
     logging.info("consensus_model: rho = {}; theta = {}".format(consensus_model.rho, consensus_model.theta))
 
-    found_line_list = [(real_rho * math.cos(real_theta) + alpha * math.sin(real_theta),
+    real_line_list = [(real_rho * math.cos(real_theta) + alpha * math.sin(real_theta),
               real_rho * math.sin(real_theta) - alpha * math.cos(real_theta))
                        for alpha in [x/10 for x in range(10 * int(alpha_range[0]), 10 * int(alpha_range[1]))] ]
+
+    found_line_list = [(consensus_model.rho * math.cos(consensus_model.theta) + alpha * math.sin(consensus_model.theta),
+                        consensus_model.rho * math.sin(consensus_model.theta) - alpha * math.cos(consensus_model.theta))
+                      for alpha in [x / 10 for x in range(10 * int(alpha_range[0]), 10 * int(alpha_range[1]))]]
+
 
     # Display the results
     fig, ax = plt.subplots()
@@ -48,8 +53,10 @@ def main():
                c='green', label='inliers')
     ax.scatter([outlier[0][0] for outlier in outliers_list], [outlier[0][1] for outlier in outliers_list],
                c='red', label='outliers')
-    ax.scatter([p[0] for p in found_line_list], [p[1] for p in found_line_list],
+    ax.scatter([p[0] for p in real_line_list], [p[1] for p in real_line_list],
                c='blue', label='real line', s=1)
+    ax.scatter([p[0] for p in found_line_list], [p[1] for p in found_line_list],
+               c='fuchsia', label='consensus line', s=1)
     ax.legend()
     ax.grid(True)
     plt.show()

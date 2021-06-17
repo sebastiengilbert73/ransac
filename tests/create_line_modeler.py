@@ -34,6 +34,7 @@ def main():
         pt = [random.uniform(alpha_range[0], alpha_range[1]), random.uniform(alpha_range[0], alpha_range[1])]
         xy_tuples.append((pt, 0))
 
+    # Create the line modeler
     line_modeler = ransac.Modeler(ransac_line.Line, number_of_trials, acceptable_error)
     consensus_model, inliers_list, outliers_list = line_modeler.ConsensusModel(xy_tuples)
     logging.info("consensus_model: rho = {}; theta = {}".format(consensus_model.rho, consensus_model.theta))

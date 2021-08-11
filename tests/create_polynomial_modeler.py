@@ -52,11 +52,7 @@ def main():
                c='green', label='inliers')
     ax.scatter([outlier[0] for outlier in outliers_list], [outlier[1] for outlier in outliers_list],
                c='red', label='outliers')
-    """ax.scatter([p[0] for p in real_circle_list], [p[1] for p in real_circle_list],
-               c='blue', label='real circle', s=1)
-    ax.scatter([p[0] for p in found_circle_list], [p[1] for p in found_circle_list],
-               c='fuchsia', label='consensus circle', s=1)
-    """
+    
     ax.legend()
     ax.grid(True)
     plt.show()

@@ -20,7 +20,7 @@ class Model(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def MinimumNumberOfDataToDefineModel(self):  # The minimum number or (x, y) observations to define the model
+    def MinimumNumberOfDataToDefineModel(self, **kwargs):  # The minimum number or (x, y) observations to define the model
         pass
 
 
@@ -33,15 +33,15 @@ class Modeler():
     def ConsensusModel(self, xy_tuples, **kwargs):
         candidate_model = self.model_class()
         final_model = self.model_class()
-        if len(xy_tuples) < candidate_model.MinimumNumberOfDataToDefineModel():
+        if len(xy_tuples) < candidate_model.MinimumNumberOfDataToDefineModel(**kwargs):
             raise ValueError("core.ConsensusModel(): len(xy_tuples) ({}) < candidate_model.MinimumNumberOfDataToDefineModel() ({})".format(
-                len(xy_tuples), candidate_model.MinimumNumberOfDataToDefineModel() ))
+                len(xy_tuples), candidate_model.MinimumNumberOfDataToDefineModel(**kwargs) ))
 
         highest_sum_of_distance_inverses = -1
         inliers_list = []
         for trial in range(1, self.number_of_trials + 1):
             # Randomly select the minimum number of data from the list
-            candidate_xy_list = random.sample(xy_tuples, candidate_model.MinimumNumberOfDataToDefineModel())
+            candidate_xy_list = random.sample(xy_tuples, candidate_model.MinimumNumberOfDataToDefineModel(**kwargs))
             # Create a candidate model
             candidate_model.Create(candidate_xy_list, **kwargs)
             # Find the inliers

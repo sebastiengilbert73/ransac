@@ -2,8 +2,9 @@ import ransac.core as ransac
 import numpy as np
 import cmath
 import math
+from ransac.models.polynomial import Polynomial
 
-class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy + Cy**2 + Dx + Ey + F.
+class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy + Cy**2 + Dx + Ey + F
     #                                A point belonging to the conic section will return 0
     def __init__(self):
         super().__init__()
@@ -14,7 +15,7 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
         self.E = 0
         self.F = 0
 
-    def Evaluate(self, xy, zero_threshold=1.0E-15):  # Take an input variable x and return an output variable y
+    def Evaluate(self, xy, zero_threshold=1.0E-15):  # Take an input variable xy and return an output variable z
         x = xy[0]
         y = xy[1]
         return self.A * x ** 2 + self.B * x * y + self.C * y ** 2 + self.D * x + self.E * y + self.F
@@ -44,6 +45,20 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
         self.D = z[3]
         self.E = z[4]
         self.F = z[5]
+
+        # Since the coefficients are defined up to a scale factor (we solved a homogeneous system of equation), we can multiply them by an arbitrary constant
+        if self.ConicSectionType() == 'ellipse':
+            center = self.Center()
+            center_value = self.Evaluate(center)
+            if center_value == 0:
+                raise ValueError("ConicSection.Create(): Evaluation at ellipse center is 0")
+            gamma = -1.0/center_value
+            self.A *= gamma
+            self.B *= gamma
+            self.C *= gamma
+            self.D *= gamma
+            self.E *= gamma
+            self.F *= gamma
 
     def MinimumNumberOfDataToDefineModel(self, **kwargs):  # The minimum number or (x, y) observations to define the model
         return 6
@@ -114,19 +129,34 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
 
         return center, a, b, theta
 
-    def ClosestPoint(self, xy, zero_threshold=1.0E-15):
+    def ClosestRadialPoint(self, xy, zero_threshold=1.0E-15):
         center = self.Center(zero_threshold)
         centered_xy = (xy[0] - center[0], xy[1] - center[1])
+        centered_xy_length = math.sqrt(centered_xy[0]**2 + centered_xy[1]**2)
+        u = (centered_xy[0]/centered_xy_length, centered_xy[1]/centered_xy_length)  # u is a unit vector pointing from the center to the considered point
         radial_points = []
         alphas = list(range(21))
         alphas = [0.1 * i for i in alphas]
         for alpha in alphas:
             p = (center[0] + alpha * centered_xy[0], center[1] + alpha * centered_xy[1])
             radial_points.append(p)
-        with open('./outputs/ConicSection_ClosestPoint_radialPoints.csv', 'w+') as radial_points_file:
-            radial_points_file.write("x,y,f(xy)\n")
-            for radial_point in radial_points:
-                f_xy = self.Evaluate(radial_point, zero_threshold)
-                radial_points_file.write("{},{},{}\n".format(radial_point[0], radial_point[1], f_xy))
+        xy_tuples = []
 
-        return (0, 0)
+        for radial_point in radial_points:
+            f_xy = self.Evaluate(radial_point, zero_threshold)
+            r = math.sqrt((radial_point[0] - center[0])**2 + (radial_point[1] - center[1])**2)
+            xy_tuples.append((r, f_xy))
+        # Fit a parabola
+        parabola_modeller = ransac.Modeler(Polynomial, number_of_trials=10, acceptable_error=0.001)
+        parabola, inliers, outliers = parabola_modeller.ConsensusModel(xy_tuples, degree=2)
+
+        # Root: r = -b +/ sqrt(b**2 - 4ac)/2a
+        a = parabola.coefficients[2]
+        b = parabola.coefficients[1]
+        c = parabola.coefficients[0]
+        radical = b**2 - 4 * a * c
+        if radical < 0:
+            raise ValueError("ConicSection.ClosestRadialPoint(): The radical b**2 - 4ac ({}) is negative".format(radical))
+        r_star = -b + math.sqrt(radical)/(2 * a) # r is positive. The negative value corresponds to the opposite point
+        p_star = (center[0] + r_star * u[0], center[1] + r_star * u[1])
+        return p_star

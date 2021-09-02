@@ -52,7 +52,7 @@ def main():
                c='green', label='inliers')
     ax.scatter([outlier[0] for outlier in outliers_list], [outlier[1] for outlier in outliers_list],
                c='red', label='outliers')
-    
+
     ax.legend()
     ax.grid(True)
     plt.show()

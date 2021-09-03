@@ -109,22 +109,9 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
         U, s, UT = np.linalg.svd(USUT, full_matrices=True)
 
         theta = cmath.phase(complex(UT[0, 0], UT[0, 1]))
-        sin2T = math.sin(theta)**2
-        cos2T = math.cos(theta)**2
-        A = np.zeros((2, 2), dtype=float)
-        c = np.zeros(2, dtype=float)
-        A[0, 0] = cos2T;    A[0, 1] = sin2T
-        A[1, 0] = sin2T;    A[1, 1] = cos2T
-        c[0] = -Ac/Fc
-        c[1] = -Cc/Fc
-        z = np.linalg.solve(A, c)
 
-        if abs(z[0] <= zero_threshold):
-            raise ValueError("ConicSection.EllipseParameters(): abs(z[0]) ({}) <= {}".format(abs(z[0]), zero_threshold))
-        if abs(z[1] <= zero_threshold):
-            raise ValueError("ConicSection.EllipseParameters(): abs(z[1) ({}) <= {}".format(abs(z[1]), zero_threshold))
-        a = math.sqrt(1/z[0])
-        b = math.sqrt(1/z[1])
+        a = math.sqrt(-Fc/s[0])
+        b = math.sqrt(-Fc/s[1])
         if b > a:
             temp_a = a
             a = b

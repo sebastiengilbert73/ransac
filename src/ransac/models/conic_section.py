@@ -18,7 +18,15 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
     def Evaluate(self, xy, zero_threshold=1.0E-15):  # Take an input variable xy and return an output variable z
         x = xy[0]
         y = xy[1]
-        return self.A * x ** 2 + self.B * x * y + self.C * y ** 2 + self.D * x + self.E * y + self.F
+        if self.ConicSectionType(zero_threshold) == 'ellipse':
+            ellipse_pt = self.EllipseRadialPoint(xy, zero_threshold)
+            return math.sqrt((x - ellipse_pt[0])**2 + (y - ellipse_pt[1])**2)
+        return 1.0E9 # To do for other conic
+
+    def PolynomialValue(self, xy):
+        x = xy[0]
+        y = xy[1]
+        return self.A * (x ** 2) + self.B * x * y + self.C * (y ** 2) + self.D * x + self.E * y + self.F
 
     def Distance(self, y1, y2):  # Compute the distance between two output variables. Must return a float.
         return abs(y1 - y2)
@@ -46,10 +54,10 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
         self.E = z[4]
         self.F = z[5]
 
-        # Since the coefficients are defined up to a scale factor (we solved a homogeneous system of equation), we can multiply them by an arbitrary constant
+        # Since the coefficients are defined up to a scale factor (we solved a homogeneous system of linear equations), we can multiply them by an arbitrary constant
         if self.ConicSectionType() == 'ellipse':
             center = self.Center()
-            center_value = self.Evaluate(center)
+            center_value = self.PolynomialValue(center)
             if center_value == 0:
                 raise ValueError("ConicSection.Create(): Evaluation at ellipse center is 0")
             gamma = -1.0/center_value
@@ -61,7 +69,7 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
             self.F *= gamma
 
     def MinimumNumberOfDataToDefineModel(self, **kwargs):  # The minimum number or (x, y) observations to define the model
-        return 6
+        return 5
 
     def ConicSectionType(self, zero_threshold=1.E-15):
         # Cf. https://www.varsitytutors.com/hotmath/hotmath_help/topics/conic-sections-and-standard-forms-of-equations
@@ -129,25 +137,27 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
 
         return center, a, b, theta
 
-    def ClosestRadialPoint(self, xy, zero_threshold=1.0E-15):
+    def EllipseRadialPoint(self, xy, zero_threshold=1.0E-15):
+        if self.ConicSectionType(zero_threshold) != 'ellipse':
+            return None
         center = self.Center(zero_threshold)
         centered_xy = (xy[0] - center[0], xy[1] - center[1])
         centered_xy_length = math.sqrt(centered_xy[0]**2 + centered_xy[1]**2)
         u = (centered_xy[0]/centered_xy_length, centered_xy[1]/centered_xy_length)  # u is a unit vector pointing from the center to the considered point
         radial_points = []
-        alphas = list(range(21))
-        alphas = [0.1 * i for i in alphas]
+        #alphas = list(range(21))
+        alphas = [0, 1, 2] #[0.1 * i for i in alphas]
         for alpha in alphas:
             p = (center[0] + alpha * centered_xy[0], center[1] + alpha * centered_xy[1])
             radial_points.append(p)
         xy_tuples = []
 
         for radial_point in radial_points:
-            f_xy = self.Evaluate(radial_point, zero_threshold)
+            f_xy = self.PolynomialValue(radial_point)
             r = math.sqrt((radial_point[0] - center[0])**2 + (radial_point[1] - center[1])**2)
             xy_tuples.append((r, f_xy))
         # Fit a parabola
-        parabola_modeller = ransac.Modeler(Polynomial, number_of_trials=10, acceptable_error=0.001)
+        parabola_modeller = ransac.Modeler(Polynomial, number_of_trials=1, acceptable_error=0.001)
         parabola, inliers, outliers = parabola_modeller.ConsensusModel(xy_tuples, degree=2)
 
         # Root: r = -b +/ sqrt(b**2 - 4ac)/2a
@@ -160,3 +170,18 @@ class ConicSection(ransac.Model):  # Input is (x, y) and output is Ax**2 + Bxy +
         r_star = -b + math.sqrt(radical)/(2 * a) # r is positive. The negative value corresponds to the opposite point
         p_star = (center[0] + r_star * u[0], center[1] + r_star * u[1])
         return p_star
+
+    def EllipsePoints(self, number_of_radiuses=100, base_radius=100, rounding=True, zero_threshold=1.0E-15):
+        if self.ConicSectionType(zero_threshold) != 'ellipse':
+            return []
+        center = self.Center(zero_threshold)
+        ellipse_points = []
+        for thetaNdx in range(number_of_radiuses):
+            theta = 2 * math.pi * thetaNdx/number_of_radiuses
+            base_pt = (center[0] + base_radius * math.cos(theta), center[1] + base_radius * math.sin(theta))
+            ellipse_pt = self.EllipseRadialPoint(base_pt)
+            if rounding:
+                ellipse_points.append((round(ellipse_pt[0]), round(ellipse_pt[1])))
+            else:
+                ellipse_points.append(ellipse_pt)
+        return ellipse_points

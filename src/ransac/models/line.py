@@ -32,10 +32,10 @@ class Line(ransac.Model):  # The input is a 2D point. The output is the distance
 
             if abs(x1[0] - x2[0]) <= self.zero_threshold:  # Vertical line
                 self.rho = x1[0]
-                self.theta = math.pi/2
+                self.theta = 0
             elif abs(x1[1] - x2[1]) <= self.zero_threshold:  # Horizontal line
                 self.rho = x1[1]
-                self.theta = 0
+                self.theta = math.pi/2
             else:  # The line is not vertical nor horizontal
                 # x_i * cos(theta) + y_i * sin(theta) = rho
                 # x_i + y_i * tan(theta) = rho/cos(theta)  Since we know cos(theta) != 0
@@ -65,7 +65,7 @@ class Line(ransac.Model):  # The input is a 2D point. The output is the distance
                 min_y = min(ys)
                 max_y = max(ys)
                 #logging.debug("line.Line.Create(): min_y = {}; max_y = {}".format(min_y, max_y))
-                if abs(min_y - max_y) <= self.zero_threshold:  # Vertical line
+                if abs(min_y - max_y) <= self.zero_threshold:  # Horizontal line
                     self.rho = min_y
                     self.theta = math.pi/2
                 else:

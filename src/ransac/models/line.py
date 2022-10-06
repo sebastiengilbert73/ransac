@@ -20,7 +20,7 @@ class Line(ransac.Model):  # The input is a 2D point. The output is the distance
     def Distance(self, y1, y2):  # Compute the distance between two output variables
         return abs(y1 - y2)
 
-    def Create(self, xy_tuples, **kwargs):  # Create a model with the given (xo, x1) observations
+    def Create(self, xy_tuples, **kwargs):  # Create a model with the given (x0, x1) observations
         if len(xy_tuples) < 2:
             raise ValueError("line.Line.Create(): The number of points ({}) is less than 2".format(len(xy_tuples)))
         if len(xy_tuples) == 2:  # We use only the point coordinates, assuming the corresponding distances to the line are 0

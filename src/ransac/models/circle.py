@@ -42,6 +42,6 @@ class Circle(ransac.Model):  # The input is a 2D point. The output is the distan
         self.radius = math.sqrt(self.center[0]**2 + self.center[1]**2 - z[2, 0])
 
 
-    def MinimumNumberOfDataToDefineModel(self):  # The minimum number or (x, y) observations to define the model
+    def MinimumNumberOfDataToDefineModel(self, **kwargs):  # The minimum number or (x, y) observations to define the model
         return 3
 

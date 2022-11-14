@@ -23,6 +23,8 @@ class Line(ransac.Model):  # The input is a 2D point. The output is the distance
     def Create(self, xy_tuples, **kwargs):  # Create a model with the given (x0, x1) observations
         if len(xy_tuples) < 2:
             raise ValueError("line.Line.Create(): The number of points ({}) is less than 2".format(len(xy_tuples)))
+        if 'zero_threshold' in kwargs:
+            self.zero_threshold = kwargs['zero_threshold']
         if len(xy_tuples) == 2:  # We use only the point coordinates, assuming the corresponding distances to the line are 0
             x1 = xy_tuples[0][0]
             x2 = xy_tuples[1][0]
@@ -91,6 +93,6 @@ class Line(ransac.Model):  # The input is a 2D point. The output is the distance
                     self.rho = z[2]
 
 
-    def MinimumNumberOfDataToDefineModel(self):  # The minimum number or (x, y) observations to define the model
+    def MinimumNumberOfDataToDefineModel(self, **kwargs):  # The minimum number or (x, y) observations to define the model
         return 2  # Two points are necessary to define a line
 

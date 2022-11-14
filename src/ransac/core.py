@@ -43,7 +43,10 @@ class Modeler():
             # Randomly select the minimum number of data from the list
             candidate_xy_list = random.sample(xy_tuples, candidate_model.MinimumNumberOfDataToDefineModel(**kwargs))
             # Create a candidate model
-            candidate_model.Create(candidate_xy_list, **kwargs)
+            try:
+                candidate_model.Create(candidate_xy_list, **kwargs)
+            except Exception as e:
+                candidate_model.__init__()
             # Find the inliers
             sum_of_distance_inverses = 0
             candidate_inliers_list = []
